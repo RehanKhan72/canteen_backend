@@ -3,23 +3,33 @@ import admin from "../config/firebase.js";
 const db = admin.firestore();
 
 class FirestoreService {
+  // ⬇️ Get all admins' FCM tokens
   async getAdminTokens() {
-    const snapshot = await db.collection("Admins").get();
+    const snapshot = await db
+      .collection("users")
+      .where("type", "==", 1)
+      .get();
+
     let tokens = [];
 
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
       const data = doc.data();
-      if (data.deviceTokens) tokens.push(...data.deviceTokens);
+      if (data.fcmToken) {
+        tokens.push(data.fcmToken);
+      }
     });
 
     return tokens;
   }
 
-  async getCustomerToken(orderId) {
-    const orderDoc = await db.collection("Orders").doc(orderId).get();
-    if (!orderDoc.exists) return null;
+  // ⬇️ Get a specific user's FCM token (customer)
+  async getCustomerToken(uid) {
+    const userDoc = await db.collection("users").doc(uid).get();
 
-    return orderDoc.data().customerFcmToken ?? null;
+    if (!userDoc.exists) return null;
+
+    const data = userDoc.data();
+    return data.fcmToken ?? null;
   }
 }
 
