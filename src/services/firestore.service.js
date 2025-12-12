@@ -30,6 +30,7 @@ class FirestoreService {
   if (!orderDoc.exists) return null;
 
   const data = orderDoc.data();
+  console.log("ORDER DATA:", data);
 
   // FCM field from order
   return data.fcm ?? null;
