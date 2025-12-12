@@ -23,14 +23,18 @@ class FirestoreService {
   }
 
   // ⬇️ Get a specific user's FCM token (customer)
-  async getCustomerToken(uid) {
-    const userDoc = await db.collection("users").doc(uid).get();
+  async getCustomerToken(orderId) {
+  // Read the Order document
+  const orderDoc = await db.collection("OrderHistory").doc(orderId).get();
 
-    if (!userDoc.exists) return null;
+  if (!orderDoc.exists) return null;
 
-    const data = userDoc.data();
-    return data.fcmToken ?? null;
-  }
+  const data = orderDoc.data();
+
+  // FCM field from order
+  return data.fcm ?? null;
+}
+
 }
 
 export default new FirestoreService();
