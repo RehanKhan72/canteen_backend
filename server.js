@@ -4,12 +4,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import notificationRoutes from "./src/routes/notification.routes.js";
+import razorpayRoutes from "./src/routes/razorpay.routes.js";   
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.use("/api/notify", notificationRoutes);
+app.use("/api/razorpay", razorpayRoutes);   
 
 app.get("/", (req, res) => {
   res.send("Canteen Backend Running");
