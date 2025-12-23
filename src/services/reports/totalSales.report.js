@@ -1,4 +1,4 @@
-module.exports = function totalSalesReport(orders, dateRange) {
+export default function totalSalesReport(orders, dateRange) {
   const grossTotal = orders.reduce(
     (sum, o) => sum + o.overallTotal,
     0
@@ -30,4 +30,4 @@ module.exports = function totalSalesReport(orders, dateRange) {
       currency: "INR"
     }
   };
-};
+}

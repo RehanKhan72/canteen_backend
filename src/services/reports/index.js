@@ -1,5 +1,5 @@
-const totalSalesReport = require("./totalSales.report");
+import totalSalesReport from "./totalSales.report.js";
 
-module.exports = {
-  total_sales: totalSalesReport
+export default {
+  total_sales: totalSalesReport,
 };

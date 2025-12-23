@@ -1,8 +1,8 @@
-const BackendDatasource = require("./BackendDatasource");
-const OrderModel = require("../../models/OrderModel");
-const db = require("../../config/firebase");
+import BackendDatasource from "./BackendDatasource.js";
+import OrderModel from "../../models/OrderModel.js";
+import db from "../../config/firebase.js";
 
-class FirebaseDatasource extends BackendDatasource {
+export default class FirebaseDatasource extends BackendDatasource {
   async getOrdersByDateRange(startDate, endDate) {
     const snapshot = await db
       .collection("OrderHistory")
@@ -16,5 +16,3 @@ class FirebaseDatasource extends BackendDatasource {
     );
   }
 }
-
-module.exports = FirebaseDatasource;

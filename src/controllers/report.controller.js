@@ -1,5 +1,5 @@
-const FirebaseDatasource = require("../services/datasource/FirebaseDatasource");
-const reports = require("../services/reports");
+import FirebaseDatasource from "../services/datasource/FirebaseDatasource.js";
+import reports from "../services/reports/index.js";
 
 const datasource = new FirebaseDatasource();
 
@@ -34,7 +34,7 @@ function resolveDateRange(body) {
   return { from, to };
 }
 
-exports.generateReport = async (req, res) => {
+export async function generateReport(req, res) {
   try {
     const { reportType } = req.body;
 
@@ -56,4 +56,4 @@ exports.generateReport = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+}
