@@ -1,4 +1,4 @@
-import db from "../config/firebase.js";
+import { db } from "../config/firebase.js";
 
 class FirestoreService {
   // ⬇️ Get all admins' FCM tokens

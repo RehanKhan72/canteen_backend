@@ -1,6 +1,6 @@
 import BackendDatasource from "./BackendDatasource.js";
 import OrderModel from "../../models/OrderModel.js";
-import db from "../../config/firebase.js";
+import { db } from "../../config/firebase.js";
 
 export default class FirebaseDatasource extends BackendDatasource {
   async getOrdersByDateRange(startDate, endDate) {
