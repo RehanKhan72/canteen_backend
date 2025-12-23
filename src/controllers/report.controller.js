@@ -1,0 +1,59 @@
+const FirebaseDatasource = require("../services/datasource/FirebaseDatasource");
+const reports = require("../services/reports");
+
+const datasource = new FirebaseDatasource();
+
+function resolveDateRange(body) {
+  const { mode, date, startDate, endDate } = body;
+
+  let from, to;
+
+  if (mode === "today") {
+    const today = new Date();
+    from = new Date(today.setHours(0, 0, 0, 0));
+    to = new Date(today.setHours(23, 59, 59, 999));
+  }
+
+  else if (mode === "date") {
+    if (!date) throw new Error("date is required");
+    from = new Date(`${date}T00:00:00`);
+    to = new Date(`${date}T23:59:59`);
+  }
+
+  else if (mode === "range") {
+    if (!startDate || !endDate)
+      throw new Error("startDate and endDate are required");
+    from = new Date(`${startDate}T00:00:00`);
+    to = new Date(`${endDate}T23:59:59`);
+  }
+
+  else {
+    throw new Error("Invalid mode");
+  }
+
+  return { from, to };
+}
+
+exports.generateReport = async (req, res) => {
+  try {
+    const { reportType } = req.body;
+
+    if (!reports[reportType]) {
+      return res.status(400).json({ error: "Invalid report type" });
+    }
+
+    const { from, to } = resolveDateRange(req.body);
+
+    const orders = await datasource.getOrdersByDateRange(from, to);
+
+    const reportJson = reports[reportType](orders, {
+      from: from.toISOString(),
+      to: to.toISOString()
+    });
+
+    res.json(reportJson);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
