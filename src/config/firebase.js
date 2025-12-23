@@ -12,4 +12,4 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export default db;
+export { admin, db };

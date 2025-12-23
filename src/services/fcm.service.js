@@ -1,4 +1,4 @@
-import admin from "../config/firebase.js";
+import { admin } from "../config/firebase.js";
 
 class FCMService {
   async sendNotificationToTokens(tokens, title, body, data = {}) {
