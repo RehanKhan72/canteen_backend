@@ -1,7 +1,8 @@
-const express = require("express");
+import express from "express";
+import { generateReport } from "../controllers/report.controller.js";
+
 const router = express.Router();
-const controller = require("../controllers/report.controller");
 
-router.post("/generate", controller.generateReport);
+router.post("/generate", generateReport);
 
-module.exports = router;
+export default router;
