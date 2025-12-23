@@ -1,6 +1,4 @@
-import admin from "../config/firebase.js";
-
-const db = admin.firestore();
+import db from "../config/firebase.js";
 
 class FirestoreService {
   // ⬇️ Get all admins' FCM tokens
@@ -10,7 +8,7 @@ class FirestoreService {
       .where("type", "==", 1)
       .get();
 
-    let tokens = [];
+    const tokens = [];
 
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -22,20 +20,18 @@ class FirestoreService {
     return tokens;
   }
 
-  // ⬇️ Get a specific user's FCM token (customer)
+  // ⬇️ Get a specific customer's FCM token
   async getCustomerToken(orderId) {
-  // Read the Order document
-  const orderDoc = await db.collection("OrderHistory").doc(orderId).get();
+    const orderDoc = await db
+      .collection("OrderHistory")
+      .doc(orderId)
+      .get();
 
-  if (!orderDoc.exists) return null;
+    if (!orderDoc.exists) return null;
 
-  const data = orderDoc.data();
-  console.log("ORDER DATA:", data);
-
-  // FCM field from order
-  return data.fcm ?? null;
-}
-
+    const data = orderDoc.data();
+    return data?.fcm ?? null;
+  }
 }
 
 export default new FirestoreService();
