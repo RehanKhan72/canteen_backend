@@ -1,6 +1,6 @@
-const OrderItem = require("./OrderItem");
+import OrderItem from "./OrderItem.js";
 
-class OrderModel {
+export default class OrderModel {
   constructor(raw, docId) {
     this.orderId = raw.orderId || "";
     this.docId = docId;
@@ -22,5 +22,3 @@ class OrderModel {
       : [];
   }
 }
-
-module.exports = OrderModel;

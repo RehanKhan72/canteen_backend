@@ -1,4 +1,4 @@
-class OrderItem {
+export default class OrderItem {
   constructor({
     prodId,
     name,
@@ -8,7 +8,7 @@ class OrderItem {
     price,
     status,
     unit,
-    quantity
+    quantity,
   }) {
     this.prodId = prodId;
     this.name = name;
@@ -22,5 +22,3 @@ class OrderItem {
     this.totalPrice = this.price * this.quantity;
   }
 }
-
-module.exports = OrderItem;
