@@ -1,4 +1,4 @@
-export default function totalSalesReport(orders, dateRange) {
+export default function totalSalesReport(orders, meta) {
   const grossTotal = orders.reduce(
     (sum, o) => sum + o.overallTotal,
     0
@@ -15,19 +15,45 @@ export default function totalSalesReport(orders, dateRange) {
   return {
     reportType: "total_sales",
     title: "Total Sales Summary",
-    dateRange,
     generatedAt: new Date().toISOString(),
-    version: "1.0",
-    data: {
-      grossTotal,
-      taxes: {
-        cgst: { rate: cgstRate, amount: cgstAmount },
-        sgst: { rate: sgstRate, amount: sgstAmount }
-      },
-      netTotal
+
+    dateRange: {
+      from: meta.from,
+      to: meta.to,
     },
+
+    columns: [
+      { key: "label", label: "Description" },
+      { key: "amount", label: "Amount (₹)" },
+    ],
+
+    rows: [
+      { sr: 1, label: "Gross Total", amount: grossTotal },
+      {
+        sr: 2,
+        label: `CGST (${cgstRate}%)`,
+        amount: cgstAmount,
+      },
+      {
+        sr: 3,
+        label: `SGST (${sgstRate}%)`,
+        amount: sgstAmount,
+      },
+      {
+        sr: 4,
+        label: "Net Total",
+        amount: netTotal,
+      },
+    ],
+
+    summary: {
+      label: "Net Total",
+      amount: netTotal,
+    },
+
     meta: {
-      currency: "INR"
-    }
+      currency: "INR",
+      orderCount: orders.length,
+    },
   };
 }
