@@ -15,4 +15,29 @@ export default class FirebaseDatasource extends BackendDatasource {
       new OrderModel(doc.data(), doc.id)
     );
   }
+
+  async getUsersByIds(userIds) {
+    if (!userIds.length) return {};
+
+    const chunks = [];
+    while (userIds.length) {
+      chunks.push(userIds.splice(0, 10)); // Firestore where-in limit
+    }
+
+    const userMap = {};
+
+    for (const chunk of chunks) {
+      const snapshot = await db
+        .collection("users")
+        .where("uid", "in", chunk)
+        .get();
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        userMap[data.uid] = data.name || "Unknown";
+      });
+    }
+
+    return userMap;
+  }
 }
