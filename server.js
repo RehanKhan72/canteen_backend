@@ -5,12 +5,14 @@ dotenv.config();
 
 import notificationRoutes from "./src/routes/notification.routes.js";
 import reportRoutes from "./src/routes/report.routes.js";
+import razorpayRoutes from "./src/routes/razorpay.routes.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.use("/api/notify", notificationRoutes);
+app.use("/api/razorpay", razorpayRoutes);
 app.use("/reports", reportRoutes);
 
 app.get("/", (req, res) => {
