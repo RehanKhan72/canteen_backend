@@ -43,6 +43,18 @@ class RazorpayService {
 
     return { verified: true };
   }
+
+  async markPaymentFailed(firestoreOrderId, reason) {
+  await firestoreService.updateOrderStatus(firestoreOrderId, {
+    status: 6, // 👈 payment failed
+    paymentVerified: false,
+    paymentFailure: {
+      reason,
+      failedAt: new Date(),
+    },
+  });
+}
+
 }
 
 export default new RazorpayService();

@@ -32,6 +32,19 @@ class FirestoreService {
     const data = orderDoc.data();
     return data?.fcm ?? null;
   }
+
+    // ⬇️ Update order status safely (used by Razorpay)
+  async updateOrderStatus(orderId, updateData) {
+    if (!orderId || !updateData) {
+      throw new Error("orderId and updateData are required");
+    }
+
+    await db
+      .collection("OrderHistory")
+      .doc(orderId)
+      .update(updateData);
+  }
+
 }
 
 export default new FirestoreService();

@@ -6,5 +6,6 @@ const router = express.Router();
 
 router.post("/create-order", RazorpayController.createOrder);
 router.post("/verify-payment", RazorpayController.verifyPayment);
+router.post("/payment-failed", RazorpayController.paymentFailed);
 
 export default router;
