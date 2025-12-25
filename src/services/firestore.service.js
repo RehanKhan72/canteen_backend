@@ -33,6 +33,16 @@ class FirestoreService {
     return data?.fcm ?? null;
   }
 
+  async getOrderById(orderId) {
+    const doc = await db.collection("OrderHistory").doc(orderId).get();
+
+    if (!doc.exists) {
+      throw new Error("Order not found");
+    }
+
+    return { id: doc.id, ...doc.data() };
+  }
+
     // ⬇️ Update order status safely (used by Razorpay)
   async updateOrderStatus(orderId, updateData) {
     if (!orderId || !updateData) {
