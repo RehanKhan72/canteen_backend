@@ -1,5 +1,4 @@
 import { MongoClient } from "mongodb";
-import logger from "../services/logger.service.js";
 
 let client;
 let db;
@@ -12,8 +11,6 @@ export async function connectMongo() {
   await client.connect();
 
   db = client.db(); // uses DB name from URI
-
-  logger.info("✅ MongoDB connected");
 
   return db;
 }
