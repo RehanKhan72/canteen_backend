@@ -6,6 +6,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  documentExists
 } from "../controllers/data.controller.js";
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.get("/doc/:collection/:docId", getDoc);
 router.put("/doc/:collection/:docId", setDoc);
 router.patch("/doc/:collection/:docId", updateDoc);
 router.delete("/doc/:collection/:docId", deleteDoc);
+router.get("/doc/:collection/:docId/exists", documentExists);
 
 export default router;

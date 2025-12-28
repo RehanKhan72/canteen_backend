@@ -36,3 +36,9 @@ export async function deleteDoc(req, res) {
   await ds.deleteDocument({ collection, docId });
   res.json({ success: true });
 }
+
+export async function documentExists(req, res) {
+  const { collection, docId } = req.params;
+  const doc = await ds.getDocument({ collection, docId });
+  res.json({ exists: !!doc });
+}
