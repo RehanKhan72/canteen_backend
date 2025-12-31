@@ -16,14 +16,18 @@ export default async function studentTransactionRecordReport(
   // 3️⃣ Fetch user names
   const userMap = await datasource.getUsersByIds(userIds);
 
-  // 4️⃣ Enrich rows
-  const rows = base.rows.map(row => ({
-    sr: row.sr,
-    studentName: userMap[row.userUid] ?? "Unknown",
-    date: row.createdAt.toLocaleDateString("en-IN"),
-    time: row.time,
-    amount: row.amount,
-  }));
+  // 4️⃣ Enrich rows (🔥 FIXED date handling)
+  const rows = base.rows.map(row => {
+    const createdDate = new Date(row.createdAt); // 👈 FIX
+
+    return {
+      sr: row.sr,
+      studentName: userMap[row.userUid] ?? "Unknown",
+      date: createdDate.toLocaleDateString("en-IN"), // ✅ safe
+      time: createdDate.toLocaleTimeString("en-IN"), // ✅ safe
+      amount: row.amount,
+    };
+  });
 
   return {
     reportType: "student_transaction_record",

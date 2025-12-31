@@ -8,7 +8,10 @@ export default function transactionHistoryReport(orders, meta) {
   const rows = sortedOrders.map((order, index) => {
     sum += order.overallTotal;
 
-    const time = order.createdAt.toLocaleTimeString("en-IN", {
+    // ✅ Convert epoch → Date ONLY here
+    const dateObj = new Date(order.createdAt);
+
+    const time = dateObj.toLocaleTimeString("en-IN", {
       timeZone: "Asia/Kolkata",
       hour: "2-digit",
       minute: "2-digit",
@@ -20,9 +23,9 @@ export default function transactionHistoryReport(orders, meta) {
       time,
       amount: order.overallTotal,
 
-      // 🔑 extra fields for composition
+      // 🔑 keep raw values for composition
       userUid: order.userUid,
-      createdAt: order.createdAt,
+      createdAt: dateObj, // Date object for downstream reports
     };
   });
 
