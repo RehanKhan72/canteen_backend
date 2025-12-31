@@ -9,9 +9,16 @@ export default function transactionHistoryReport(orders, meta) {
   let sum = 0;
 
   const rows = sortedOrders.map((order, index) => {
-    sum += order.overallTotal;
+    // ✅ RECOMPUTE ORDER AMOUNT FROM ITEMS
+    const orderAmount = (order.items || []).reduce(
+      (acc, item) =>
+        acc + Number(item.price || 0) * Number(item.quantity || 0),
+      0
+    );
 
-    // ✅ Convert epoch → Date ONLY for formatting
+    sum += orderAmount;
+
+    // Convert epoch → Date ONLY for formatting
     const dateObj = new Date(order.createdAt);
 
     const time = dateObj.toLocaleTimeString("en-IN", {
@@ -24,11 +31,9 @@ export default function transactionHistoryReport(orders, meta) {
     return {
       sr: index + 1,
       time,
-      amount: order.overallTotal,
-
-      // 🔑 Keep RAW epoch for downstream composition
+      amount: orderAmount, // ✅ FIXED
       userUid: order.userUid,
-      createdAt: order.createdAt, // ✅ epoch ms ONLY
+      createdAt: order.createdAt, // epoch ms
     };
   });
 
@@ -36,10 +41,8 @@ export default function transactionHistoryReport(orders, meta) {
     reportType: "transaction_history",
     title: "Transaction History",
 
-    // ✅ epoch ms (Flutter-safe)
     generatedAt: Date.now(),
 
-    // ✅ epoch ms (Flutter-safe)
     dateRange: {
       from: meta.from,
       to: meta.to,
@@ -55,7 +58,7 @@ export default function transactionHistoryReport(orders, meta) {
 
     summary: {
       label: "Sum",
-      amount: sum,
+      amount: sum, // ✅ guaranteed correct now
     },
 
     meta: {
