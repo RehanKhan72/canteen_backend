@@ -32,7 +32,7 @@ export default async function studentTransactionRecordReport(
   return {
     reportType: "student_transaction_record",
     title: "Student Transaction Record",
-    generatedAt: new Date().toISOString(),
+    generatedAt: Date.now(),
 
     dateRange: base.dateRange,
 

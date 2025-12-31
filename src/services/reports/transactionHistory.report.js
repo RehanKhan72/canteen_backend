@@ -1,4 +1,7 @@
+// src/services/reports/transactionHistory.report.js
+
 export default function transactionHistoryReport(orders, meta) {
+  // Sort by createdAt (epoch ms)
   const sortedOrders = [...orders].sort(
     (a, b) => a.createdAt - b.createdAt
   );
@@ -8,7 +11,7 @@ export default function transactionHistoryReport(orders, meta) {
   const rows = sortedOrders.map((order, index) => {
     sum += order.overallTotal;
 
-    // ✅ Convert epoch → Date ONLY here
+    // ✅ Convert epoch → Date ONLY for formatting
     const dateObj = new Date(order.createdAt);
 
     const time = dateObj.toLocaleTimeString("en-IN", {
@@ -23,17 +26,20 @@ export default function transactionHistoryReport(orders, meta) {
       time,
       amount: order.overallTotal,
 
-      // 🔑 keep raw values for composition
+      // 🔑 Keep RAW epoch for downstream composition
       userUid: order.userUid,
-      createdAt: dateObj, // Date object for downstream reports
+      createdAt: order.createdAt, // ✅ epoch ms ONLY
     };
   });
 
   return {
     reportType: "transaction_history",
     title: "Transaction History",
-    generatedAt: new Date().toISOString(),
 
+    // ✅ epoch ms (Flutter-safe)
+    generatedAt: Date.now(),
+
+    // ✅ epoch ms (Flutter-safe)
     dateRange: {
       from: meta.from,
       to: meta.to,

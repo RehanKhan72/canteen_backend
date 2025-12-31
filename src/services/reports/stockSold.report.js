@@ -41,7 +41,7 @@ export default function stockSoldReport(orders, meta) {
   return {
     reportType: "stock_sold",
     title: "Stock Sold",
-    generatedAt: new Date().toISOString(),
+    generatedAt: Date.now(),
 
     dateRange: {
       from: meta.from,

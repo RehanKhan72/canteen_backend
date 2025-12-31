@@ -15,7 +15,7 @@ export default function totalSalesReport(orders, meta) {
   return {
     reportType: "total_sales",
     title: "Total Sales Summary",
-    generatedAt: new Date().toISOString(),
+    generatedAt: Date.now(),
 
     dateRange: {
       from: meta.from,
