@@ -1,6 +1,7 @@
-import FirestoreService from "../services/firestore.service.js";
+import MongoDatasource from "../services/datasource/MongoDatasource.js";
 import FCMService from "../services/fcm.service.js";
 
+const ds = new MongoDatasource();
 
 const ORDER_STATUS_MAP = {
   [-1]: "Not paid",
@@ -15,12 +16,13 @@ const ORDER_STATUS_MAP = {
 
 class NotificationController {
 
-  // For new orders → notify admins
+  // 🔔 For new orders → notify admins
   async sendNewOrder(req, res) {
     try {
       const { orderId, summary } = req.body;
 
-      const tokens = await FirestoreService.getAdminTokens();
+      // ⬇️ MongoDB-backed
+      const tokens = await ds.getAdminTokens();
 
       await FCMService.sendNotificationToTokens(
         tokens,
@@ -31,22 +33,25 @@ class NotificationController {
 
       res.json({ success: true });
     } catch (err) {
-      console.error(err);
+      console.error("sendNewOrder error:", err);
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
 
-  // For status updates → notify customer
+  // 🔔 For status updates → notify customer
   async sendOrderStatus(req, res) {
     try {
       const { orderId, status } = req.body;
 
-      const token = await FirestoreService.getCustomerToken(orderId);
+      // ⬇️ MongoDB-backed
+      const token = await ds.getCustomerToken(orderId);
       if (!token) {
-        return res.json({ success: false, message: "No customer token" });
+        return res.json({
+          success: false,
+          message: "No customer token",
+        });
       }
 
-      // Convert numeric status → human readable
       const readableStatus =
         ORDER_STATUS_MAP[status] ?? "Order updated";
 
@@ -57,7 +62,7 @@ class NotificationController {
         {
           orderId,
           status,
-          readableStatus, // useful for client-side handling/logging
+          readableStatus,
         }
       );
 
@@ -67,7 +72,6 @@ class NotificationController {
       res.status(500).json({ success: false });
     }
   }
-
 }
 
 export default new NotificationController();

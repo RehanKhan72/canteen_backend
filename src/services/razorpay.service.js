@@ -1,7 +1,9 @@
 // src/services/razorpay.service.js
 import crypto from "crypto";
 import razorpayInstance from "../config/razorpay.js";
-import firestoreService from "./firestore.service.js";
+import MongoDatasource from "./datasource/MongoDatasource.js";
+
+const ds = new MongoDatasource();
 
 class RazorpayService {
   async createOrder(amount, receiptId) {
@@ -24,8 +26,8 @@ class RazorpayService {
       return { verified: false };
     }
 
-    // 🔐 READ CURRENT ORDER STATE
-    const order = await firestoreService.getOrderById(firestoreOrderId);
+    // 🔐 READ CURRENT ORDER (Mongo)
+    const order = await ds.getOrderById(firestoreOrderId);
 
     // ✅ Already paid → ignore duplicate success
     if (order.status === 0) {
@@ -33,14 +35,14 @@ class RazorpayService {
     }
 
     // ✅ SUCCESS ALWAYS WINS
-    await firestoreService.updateOrderStatus(firestoreOrderId, {
+    await ds.updateOrderStatus(firestoreOrderId, {
       status: 0, // paid
       paymentVerified: true,
       paymentDetails: {
         orderId,
         paymentId,
         signature,
-        verifiedAt: new Date(),
+        verifiedAt: Date.now(),
       },
     });
 
@@ -48,8 +50,8 @@ class RazorpayService {
   }
 
   async markPaymentFailed(firestoreOrderId, reason) {
-    // 🔐 READ CURRENT ORDER STATE
-    const order = await firestoreService.getOrderById(firestoreOrderId);
+    // 🔐 READ CURRENT ORDER (Mongo)
+    const order = await ds.getOrderById(firestoreOrderId);
 
     // ❗ NEVER override a paid order
     if (order.status === 0) {
@@ -61,12 +63,12 @@ class RazorpayService {
       return { ignored: true };
     }
 
-    await firestoreService.updateOrderStatus(firestoreOrderId, {
+    await ds.updateOrderStatus(firestoreOrderId, {
       status: 6, // payment failed
       paymentVerified: false,
       paymentFailure: {
         reason,
-        failedAt: new Date(),
+        failedAt: Date.now(),
       },
     });
 

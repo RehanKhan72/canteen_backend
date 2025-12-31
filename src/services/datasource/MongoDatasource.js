@@ -1,17 +1,19 @@
 import BackendDatasource from "./BackendDatasource.js";
 import { getDb } from "../../config/mongodb.js";
-import { ObjectId } from "mongodb";
 
-class MongoDatasource extends BackendDatasource {
+export default class MongoDatasource extends BackendDatasource {
+
   collection(name) {
     return getDb().collection(name);
   }
+
+  // ---------- Generic CRUD ----------
 
   async queryCollection({ collection, where, orderBy, descending }) {
     const query = this._parseWhere(where);
     const sort = orderBy ? { [orderBy]: descending ? -1 : 1 } : {};
 
-    return await this.collection(collection)
+    return this.collection(collection)
       .find(query)
       .sort(sort)
       .toArray();
@@ -28,9 +30,9 @@ class MongoDatasource extends BackendDatasource {
     const query = this._parseWhere(where);
 
     if (startAfter && orderBy) {
-      query[orderBy] = {
-        ...(descending ? { $lt: startAfter } : { $gt: startAfter }),
-      };
+      query[orderBy] = descending
+        ? { $lt: startAfter }
+        : { $gt: startAfter };
     }
 
     const cursor = this.collection(collection)
@@ -39,13 +41,13 @@ class MongoDatasource extends BackendDatasource {
       .limit(limit || 20);
 
     const docs = await cursor.toArray();
-    const last = docs.length ? docs[docs.length - 1][orderBy] : null;
+    const lastDoc = docs.length ? docs[docs.length - 1][orderBy] : null;
 
-    return { docs, cursor: last };
+    return { docs, cursor: lastDoc };
   }
 
   async getDocument({ collection, docId }) {
-    return await this.collection(collection).findOne({ _id: docId });
+    return this.collection(collection).findOne({ _id: docId });
   }
 
   async setDocument({ collection, docId, data }) {
@@ -67,6 +69,37 @@ class MongoDatasource extends BackendDatasource {
     await this.collection(collection).deleteOne({ _id: docId });
   }
 
+  // ---------- Domain-specific ----------
+
+  async getOrdersByDateRange(startDate, endDate) {
+    return this.collection("OrderHistory")
+      .find({
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+        status: 4,
+      })
+      .toArray();
+  }
+
+  async getUsersByIds(userIds) {
+    if (!userIds.length) return {};
+
+    const users = await this.collection("users")
+      .find({ uid: { $in: userIds } })
+      .toArray();
+
+    const map = {};
+    for (const u of users) {
+      map[u.uid] = u.name || "Unknown";
+    }
+
+    return map;
+  }
+
+  // ---------- Helpers ----------
+
   _parseWhere(where = {}) {
     const query = {};
 
@@ -86,6 +119,46 @@ class MongoDatasource extends BackendDatasource {
 
     return query;
   }
-}
 
-export default MongoDatasource;
+    // 🔔 Admin FCM tokens
+  async getAdminTokens() {
+    const admins = await this.collection("users")
+      .find({ type: 1, fcmToken: { $exists: true } })
+      .toArray();
+
+    return admins.map(a => a.fcmToken);
+  }
+
+  // 🔔 Customer token from order
+  async getCustomerToken(orderId) {
+    const order = await this.collection("OrderHistory")
+      .findOne({ _id: orderId });
+
+    return order?.fcm ?? null;
+  }
+
+  // 📦 Get order by ID
+  async getOrderById(orderId) {
+    const order = await this.collection("OrderHistory")
+      .findOne({ _id: orderId });
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    return order;
+  }
+
+  // 📦 Update order status (Razorpay etc.)
+  async updateOrderStatus(orderId, updateData) {
+    if (!orderId || !updateData) {
+      throw new Error("orderId and updateData are required");
+    }
+
+    await this.collection("OrderHistory").updateOne(
+      { _id: orderId },
+      { $set: updateData }
+    );
+  }
+
+}
