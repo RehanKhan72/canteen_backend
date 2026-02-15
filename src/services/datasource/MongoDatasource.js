@@ -1,5 +1,5 @@
 import BackendDatasource from "./BackendDatasource.js";
-import { getDb } from "../../config/mongodb.js";
+import { getDb } from "../../../dist/config/mongodb.js";
 
 export default class MongoDatasource extends BackendDatasource {
 

@@ -2,6 +2,7 @@
 import crypto from "crypto";
 import razorpayInstance from "../config/razorpay.js";
 import MongoDatasource from "./datasource/MongoDatasource.js";
+import { emitKitchenUpdate } from "../../dist/socket/SocketGateway.js";
 
 const ds = new MongoDatasource();
 
@@ -36,7 +37,7 @@ class RazorpayService {
 
     // ✅ SUCCESS ALWAYS WINS
     await ds.updateOrderStatus(firestoreOrderId, {
-      status: 0, // paid
+      status: 2, // In making
       paymentVerified: true,
       paymentDetails: {
         orderId,
@@ -45,6 +46,14 @@ class RazorpayService {
         verifiedAt: Date.now(),
       },
     });
+
+    // 🔥 ADD THIS
+    const updatedOrder = await ds.getOrderById(firestoreOrderId);
+    await KitchenService.addOrderItems(updatedOrder);
+
+    const snapshot = await KitchenService.getSnapshot();
+    emitKitchenUpdate(snapshot);
+
 
     return { verified: true };
   }
