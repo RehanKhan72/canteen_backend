@@ -2,6 +2,8 @@
 import crypto from "crypto";
 import razorpayInstance from "../config/razorpay.js";
 import MongoDatasource from "./datasource/MongoDatasource.js";
+
+import KitchenService from "../../dist/services/KitchenService.js";
 import { emitKitchenUpdate } from "../../dist/socket/SocketGateway.js";
 
 const ds = new MongoDatasource();
