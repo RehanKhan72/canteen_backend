@@ -6,7 +6,7 @@ export default class KitchenScheduler {
     static start() {
         setInterval(async () => {
             const db = getDb();
-            const ordersCollection = db.collection("orders");
+            const ordersCollection = db.collection("OrderHistory");
             const now = Date.now();
             const readyOrders = await ordersCollection.find({
                 status: 1,
