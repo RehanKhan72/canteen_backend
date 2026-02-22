@@ -1,12 +1,24 @@
 // src/services/AllocationEngine.ts
+import MongoDatasource from "../../src/services/datasource/MongoDatasource.js";
+import FCMService from "../../src/services/fcm.service.js";
 import { getDb } from "../config/mongodb.js";
+const ORDER_STATUS_MAP = {
+    [-1]: "Not paid",
+    0: "Paid not accepted",
+    1: "Accepted",
+    2: "In making",
+    3: "Ready to pick",
+    4: "Picked up",
+    5: "Cancelled",
+    6: "Payment failed",
+};
 export default class AllocationEngine {
     static async process(consumed) {
         if (!consumed.length)
             return;
         const db = getDb();
         const ordersCollection = db.collection("orders");
-        // Group by orderId
+        const ds = new MongoDatasource();
         const grouped = {};
         for (const entry of consumed) {
             if (!grouped[entry.orderId])
@@ -18,19 +30,38 @@ export default class AllocationEngine {
             _id: { $in: orderIds }
         }).toArray();
         for (const order of orders) {
-            const entries = grouped[order._id.toString()];
+            const entries = grouped[order._id];
             for (const entry of entries) {
-                const item = order.items.find((i) => i.prodId === entry.itemId);
+                const item = order.items.find(i => i.prodId === entry.itemId);
                 if (!item)
                     continue;
                 item.fulfilledQty = Math.min(item.quantity, (item.fulfilledQty || 0) + entry.qty);
             }
-            const allComplete = order.items.every((i) => (i.fulfilledQty || 0) >= i.quantity);
-            if (allComplete && order.status === 2) {
-                await ordersCollection.updateOne({ _id: order._id }, { $set: { status: 3, updatedAt: Date.now() } });
-            }
-            else {
-                await ordersCollection.updateOne({ _id: order._id }, { $set: { items: order.items, updatedAt: Date.now() } });
+            const allComplete = order.items.every(i => (i.fulfilledQty || 0) >= i.quantity);
+            const wasStatus2 = order.status === 2;
+            const newStatus = allComplete && wasStatus2 ? 3 : order.status;
+            await ordersCollection.updateOne({ _id: order._id }, {
+                $set: {
+                    items: order.items,
+                    status: newStatus,
+                    updatedAt: Date.now()
+                }
+            });
+            // 🔥 Trigger notification ONLY when status changes to 3
+            if (wasStatus2 && newStatus === 3) {
+                try {
+                    const token = await ds.getCustomerToken(order._id);
+                    if (token) {
+                        await FCMService.sendNotificationToTokens([token], "Order Update", "Your order is now Ready to pick", {
+                            orderId: order._id,
+                            status: 3,
+                            readableStatus: ORDER_STATUS_MAP[3]
+                        });
+                    }
+                }
+                catch (err) {
+                    console.error("Ready notification failed:", err);
+                }
             }
         }
     }
