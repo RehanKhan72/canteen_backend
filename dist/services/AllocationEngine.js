@@ -18,7 +18,7 @@ export default class AllocationEngine {
         if (!consumed.length)
             return;
         const db = getDb();
-        const ordersCollection = db.collection("orders");
+        const ordersCollection = db.collection("OrderHistory");
         const ds = new MongoDatasource();
         const grouped = {};
         for (const entry of consumed) {

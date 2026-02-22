@@ -37,7 +37,7 @@ export default class AllocationEngine {
         if (!consumed.length) return;
 
         const db = getDb();
-        const ordersCollection = db.collection<OrderDoc>("orders");
+        const ordersCollection = db.collection<OrderDoc>("OrderHistory");
         const ds = new MongoDatasource();
 
         const grouped: Record<string, ConsumedEntry[]> = {};
@@ -53,7 +53,7 @@ export default class AllocationEngine {
         }).toArray();
         
         console.log("Orders found:", orders.length);
-        
+
         for (const order of orders) {
 
             const entries = grouped[order._id.toString()];
