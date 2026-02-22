@@ -33,6 +33,7 @@ const ORDER_STATUS_MAP: Record<number, string> = {
 export default class AllocationEngine {
 
     static async process(consumed: ConsumedEntry[]) {
+        console.log("AllocationEngine called with:", consumed);
         if (!consumed.length) return;
 
         const db = getDb();
@@ -40,18 +41,19 @@ export default class AllocationEngine {
         const ds = new MongoDatasource();
 
         const grouped: Record<string, ConsumedEntry[]> = {};
-
         for (const entry of consumed) {
             if (!grouped[entry.orderId]) grouped[entry.orderId] = [];
             grouped[entry.orderId].push(entry);
         }
-
+        
         const orderIds = Object.keys(grouped);
-
+        
         const orders = await ordersCollection.find({
             _id: { $in: orderIds }
         }).toArray();
-
+        
+        console.log("Orders found:", orders.length);
+        
         for (const order of orders) {
 
             const entries = grouped[order._id.toString()];

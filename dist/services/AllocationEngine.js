@@ -14,6 +14,7 @@ const ORDER_STATUS_MAP = {
 };
 export default class AllocationEngine {
     static async process(consumed) {
+        console.log("AllocationEngine called with:", consumed);
         if (!consumed.length)
             return;
         const db = getDb();
@@ -29,6 +30,7 @@ export default class AllocationEngine {
         const orders = await ordersCollection.find({
             _id: { $in: orderIds }
         }).toArray();
+        console.log("Orders found:", orders.length);
         for (const order of orders) {
             const entries = grouped[order._id.toString()];
             if (!entries)
