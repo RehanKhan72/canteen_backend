@@ -30,7 +30,9 @@ export default class AllocationEngine {
             _id: { $in: orderIds }
         }).toArray();
         for (const order of orders) {
-            const entries = grouped[order._id];
+            const entries = grouped[order._id.toString()];
+            if (!entries)
+                continue;
             for (const entry of entries) {
                 const item = order.items.find(i => i.prodId === entry.itemId);
                 if (!item)

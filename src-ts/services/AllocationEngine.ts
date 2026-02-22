@@ -54,7 +54,8 @@ export default class AllocationEngine {
 
         for (const order of orders) {
 
-            const entries = grouped[order._id];
+            const entries = grouped[order._id.toString()];
+            if (!entries) continue;
 
             for (const entry of entries) {
 
