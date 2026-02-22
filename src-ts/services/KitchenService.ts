@@ -83,8 +83,11 @@ export default class KitchenService {
         remaining = 0;
       }
     }
-
-    const newTotal = Math.max(doc.totalQuantity - quantity, 0);
+    if (consumed.length === 0) {
+      console.log("No consumed entries, skipping AllocationEngine");
+    }
+    const actualConsumed = consumed.reduce((sum, c) => sum + c.qty, 0);
+    const newTotal = Math.max(doc.totalQuantity - actualConsumed, 0);
 
     await this.collection().updateOne(
       { itemId },
@@ -99,7 +102,9 @@ export default class KitchenService {
 
     // 🔥 CALL ALLOCATION ENGINE
     try {
-      await AllocationEngine.process(consumed);
+      if (actualConsumed > 0) {
+        await AllocationEngine.process(consumed);
+      }
     } catch (err) {
       console.error("AllocationEngine error:", err);
     }
