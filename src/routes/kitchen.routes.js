@@ -1,8 +1,10 @@
 import express from "express";
 import KitchenService from "../../dist/services/KitchenService.js";
+import MongoDatasource from "../services/datasource/MongoDatasource.js";
 import { emitKitchenUpdate } from "../../dist/socket/SocketGateway.js";
 
 const router = express.Router();
+const ds = new MongoDatasource();
 
 router.get("/snapshot", async (req, res) => {
   try {
@@ -14,6 +16,7 @@ router.get("/snapshot", async (req, res) => {
   }
 });
 
+// 🔥 Decrement endpoint
 router.post("/decrement", async (req, res) => {
   try {
     const { itemId, quantity } = req.body;
@@ -35,17 +38,18 @@ router.post("/decrement", async (req, res) => {
   }
 });
 
+// 🔥 Clear item endpoint
 router.post("/clear", async (req, res) => {
   try {
     const { itemId } = req.body;
 
-    if (!itemId) {
-      return res.status(400).json({ error: "Missing itemId" });
+    const orderIds = await KitchenService.clearItem(itemId);
+
+    // cancel those orders
+    for (const id of orderIds) {
+      await ds.updateOrderStatus(id, { status: 5 });
     }
 
-    await KitchenService.clearItem(itemId);
-
-    // Broadcast updated snapshot
     const snapshot = await KitchenService.getSnapshot();
     emitKitchenUpdate(snapshot);
 

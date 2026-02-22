@@ -17,48 +17,127 @@ class RazorpayService {
     });
   }
 
-  async verifyPayment({ orderId, paymentId, signature, firestoreOrderId }) {
-    const body = `${orderId}|${paymentId}`;
+async verifyPayment({ orderId, paymentId, signature, firestoreOrderId }) {
 
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_SECRET)
-      .update(body)
-      .digest("hex");
+  const body = `${orderId}|${paymentId}`;
 
-    if (expectedSignature !== signature) {
-      return { verified: false };
-    }
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_SECRET)
+    .update(body)
+    .digest("hex");
 
-    // 🔐 READ CURRENT ORDER (Mongo)
-    const order = await ds.getOrderById(firestoreOrderId);
+  if (expectedSignature !== signature) {
+    return { verified: false };
+  }
 
-    // ✅ Already paid → ignore duplicate success
-    if (order.status === 0) {
-      return { verified: true, ignored: true };
-    }
+  const order = await ds.getOrderById(firestoreOrderId);
 
-    // ✅ SUCCESS ALWAYS WINS
+  if (order.status !== -1) {
+    return { verified: true, ignored: true };
+  }
+
+  const now = Date.now();
+
+  // 🔥 CASE 1: PICKUP NOW
+  if (order.pickupMode === "now") {
+
     await ds.updateOrderStatus(firestoreOrderId, {
-      status: 2, // In making
+      status: 2,
       paymentVerified: true,
       paymentDetails: {
         orderId,
         paymentId,
         signature,
-        verifiedAt: Date.now(),
+        verifiedAt: now,
       },
+      updatedAt: now,
     });
 
     // 🔥 ADD THIS
     const updatedOrder = await ds.getOrderById(firestoreOrderId);
+
     await KitchenService.addOrderItems(updatedOrder);
 
     const snapshot = await KitchenService.getSnapshot();
     emitKitchenUpdate(snapshot);
 
+    return { verified: true };
+  }
+
+  // 🔥 CASE 2: PICKUP LATER (dynamic format support)
+  if (order.pickupMode === "later") {
+
+    let pickupTimestamp = null;
+
+    // ✅ If already epoch number
+    if (typeof order.pickupTime === "number") {
+      pickupTimestamp = order.pickupTime;
+    }
+
+    // ✅ If string (HH:mm or ISO)
+    else if (typeof order.pickupTime === "string") {
+
+      if (order.pickupTime.includes(":") && order.pickupTime.length <= 5) {
+        // Format: "HH:mm"
+        const [hours, minutes] = order.pickupTime.split(":");
+
+        const d = new Date();
+        d.setHours(parseInt(hours));
+        d.setMinutes(parseInt(minutes));
+        d.setSeconds(0);
+        d.setMilliseconds(0);
+
+        pickupTimestamp = d.getTime();
+      } else {
+        // Try ISO parsing
+        const parsed = new Date(order.pickupTime);
+        if (!isNaN(parsed.getTime())) {
+          pickupTimestamp = parsed.getTime();
+        }
+      }
+    }
+
+    if (!pickupTimestamp) {
+      console.error("Invalid pickupTime format:", order.pickupTime);
+      return { verified: false };
+    }
+
+    const scheduledTime = pickupTimestamp - (15 * 60 * 1000);
+
+    await ds.updateOrderStatus(firestoreOrderId, {
+      status: 1,
+      paymentVerified: true,
+      kitchenScheduledAt: scheduledTime,
+      paymentDetails: {
+        orderId,
+        paymentId,
+        signature,
+        verifiedAt: now,
+      },
+      updatedAt: now,
+    });
+
+    // If already within 15-minute window
+    if (scheduledTime <= now) {
+
+      const updatedOrder = await ds.getOrderById(firestoreOrderId);
+
+      await ds.updateOrderStatus(firestoreOrderId, {
+        status: 2,
+        updatedAt: now,
+      });
+
+      await KitchenService.addOrderItems(updatedOrder);
+
+      const snapshot = await KitchenService.getSnapshot();
+      emitKitchenUpdate(snapshot);
+    }
 
     return { verified: true };
   }
+
+  return { verified: true };
+}
 
   async markPaymentFailed(firestoreOrderId, reason) {
     // 🔐 READ CURRENT ORDER (Mongo)

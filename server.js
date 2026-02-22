@@ -13,6 +13,7 @@ import reportRoutes from "./src/routes/report.routes.js";
 import razorpayRoutes from "./src/routes/razorpay.routes.js";
 import dataRoutes from "./src/routes/data.routes.js";
 import kitchenRoutes from "./src/routes/kitchen.routes.js";
+import KitchenScheduler from "./dist/services/KitchenScheduler.js";
 
 import { initSocket } from "./dist/socket/SocketGateway.js";
 
@@ -34,6 +35,7 @@ const io = new Server(server, {
 
 // 🔥 Initialize Socket Gateway
 initSocket(io);
+KitchenScheduler.start();
 
 app.use("/api/notify", notificationRoutes);
 app.use("/api/razorpay", razorpayRoutes);
