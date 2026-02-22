@@ -1,6 +1,5 @@
 // src/services/AllocationEngine.ts
 import { getDb } from "../config/mongodb.js";
-import { ObjectId } from "mongodb";
 export default class AllocationEngine {
     static async process(consumed) {
         if (!consumed.length)
@@ -16,7 +15,7 @@ export default class AllocationEngine {
         }
         const orderIds = Object.keys(grouped);
         const orders = await ordersCollection.find({
-            _id: { $in: orderIds.map(id => new ObjectId(id)) }
+            _id: { $in: orderIds }
         }).toArray();
         for (const order of orders) {
             const entries = grouped[order._id.toString()];

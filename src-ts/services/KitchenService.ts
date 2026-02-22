@@ -98,7 +98,11 @@ export default class KitchenService {
     );
 
     // 🔥 CALL ALLOCATION ENGINE
-    await AllocationEngine.process(consumed);
+    try {
+      await AllocationEngine.process(consumed);
+    } catch (err) {
+      console.error("AllocationEngine error:", err);
+    }
   }
 
   static async getSnapshot() {
