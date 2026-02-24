@@ -68,6 +68,24 @@ class RazorpayController {
       res.status(500).json({ error: "Failed to mark payment failed" });
     }
   }
+
+  async cancelOrder(req, res) {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ message: "orderId required" });
+    }
+
+    const result = await RazorpayService.cancelAndRefund(orderId);
+
+    return res.json(result);
+
+  } catch (error) {
+    console.error("Cancel error:", error);
+    return res.status(500).json({ message: "Cancel failed" });
+  }
+}
 }
 
 export default new RazorpayController();

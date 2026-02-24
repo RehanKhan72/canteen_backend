@@ -17,6 +17,77 @@ class RazorpayService {
     });
   }
 
+  async cancelAndRefund(orderId) {
+
+    const order = await ds.getOrderById(orderId);
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    if (order.status === 5) {
+      return { skipped: true, reason: "Already cancelled" };
+    }
+
+    // Update status to cancelled first
+    await ds.updateOrderStatus(orderId, {
+      status: 5,
+      updatedAt: Date.now(),
+    });
+
+    // If payment not verified → no refund needed
+    if (!order.paymentVerified) {
+      return { cancelled: true, refund: "NOT_REQUIRED" };
+    }
+
+    // Prevent double refund
+    if (order.refundStatus && order.refundStatus !== "NONE") {
+      return { cancelled: true, refund: "ALREADY_PROCESSED" };
+    }
+
+    // Mark refund processing
+    await ds.updateOrderStatus(orderId, {
+      refundStatus: "PROCESSING",
+      refundInitiatedAt: Date.now(),
+    });
+
+    try {
+      const refund = await razorpayInstance.payments.refund(
+        order.paymentDetails.paymentId,
+        {
+          amount: order.amount * 100,
+        }
+      );
+
+      await ds.updateOrderStatus(orderId, {
+        refundStatus: "SUCCESS",
+        refundId: refund.id,
+        refundedAt: Date.now(),
+      });
+
+      return {
+        cancelled: true,
+        refund: "SUCCESS",
+        refundId: refund.id,
+      };
+
+    } catch (error) {
+
+      await ds.updateOrderStatus(orderId, {
+        refundStatus: "FAILED",
+        refundFailure: {
+          message: error.message,
+          failedAt: Date.now(),
+        },
+      });
+
+      return {
+        cancelled: true,
+        refund: "FAILED",
+      };
+    }
+  }
+
   async verifyPayment({ orderId, paymentId, signature, firestoreOrderId }) {
 
     const body = `${orderId}|${paymentId}`;
@@ -45,8 +116,11 @@ class RazorpayService {
     if (order.pickupMode === "now") {
 
       await ds.updateOrderStatus(firestoreOrderId, {
-        status: 2, // In making
+        status: 2, // or 1 in later case
         paymentVerified: true,
+        paymentStatus: "SUCCESS",
+        razorpayPaymentId: paymentId,
+        refundStatus: "NONE", // 🔥 important
         paymentDetails: {
           orderId,
           paymentId,
@@ -81,8 +155,11 @@ class RazorpayService {
       const scheduledTime = pickupTimestamp - (15 * 60 * 1000);
 
       await ds.updateOrderStatus(firestoreOrderId, {
-        status: 1, // Accepted (not yet in kitchen)
+        status: 1,
         paymentVerified: true,
+        paymentStatus: "SUCCESS",
+        razorpayPaymentId: paymentId,
+        refundStatus: "NONE",
         kitchenScheduledAt: scheduledTime,
         paymentDetails: {
           orderId,
