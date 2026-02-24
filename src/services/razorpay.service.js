@@ -32,17 +32,20 @@ class RazorpayService {
 
     const order = await ds.getOrderById(firestoreOrderId);
 
+    // Prevent double processing
     if (order.status !== -1) {
       return { verified: true, ignored: true };
     }
 
     const now = Date.now();
 
-    // 🔥 CASE 1: PICKUP NOW
+    // ==============================
+    // 🚀 CASE 1: PICKUP NOW
+    // ==============================
     if (order.pickupMode === "now") {
 
       await ds.updateOrderStatus(firestoreOrderId, {
-        status: 2,
+        status: 2, // In making
         paymentVerified: true,
         paymentDetails: {
           orderId,
@@ -53,7 +56,6 @@ class RazorpayService {
         updatedAt: now,
       });
 
-      // 🔥 ADD THIS
       const updatedOrder = await ds.getOrderById(firestoreOrderId);
 
       await KitchenService.addOrderItems(updatedOrder);
@@ -64,48 +66,22 @@ class RazorpayService {
       return { verified: true };
     }
 
-    // 🔥 CASE 2: PICKUP LATER (dynamic format support)
+    // ==============================
+    // 🕒 CASE 2: PICKUP LATER
+    // ==============================
     if (order.pickupMode === "later") {
 
-      let pickupTimestamp = null;
+      const pickupTimestamp = order.pickupTime; // 🔥 already epoch
 
-      // ✅ If already epoch number
-      if (typeof order.pickupTime === "number") {
-        pickupTimestamp = order.pickupTime;
-      }
-
-      // ✅ If string (HH:mm or ISO)
-      else if (typeof order.pickupTime === "string") {
-
-        if (order.pickupTime.includes(":") && order.pickupTime.length <= 5) {
-          // Format: "HH:mm"
-          const [hours, minutes] = order.pickupTime.split(":");
-
-          const d = new Date();
-          d.setHours(parseInt(hours));
-          d.setMinutes(parseInt(minutes));
-          d.setSeconds(0);
-          d.setMilliseconds(0);
-
-          pickupTimestamp = d.getTime();
-        } else {
-          // Try ISO parsing
-          const parsed = new Date(order.pickupTime);
-          if (!isNaN(parsed.getTime())) {
-            pickupTimestamp = parsed.getTime();
-          }
-        }
-      }
-
-      if (!pickupTimestamp) {
-        console.error("Invalid pickupTime format:", order.pickupTime);
+      if (!pickupTimestamp || typeof pickupTimestamp !== "number") {
+        console.error("Invalid pickupTime:", order.pickupTime);
         return { verified: false };
       }
 
       const scheduledTime = pickupTimestamp - (15 * 60 * 1000);
 
       await ds.updateOrderStatus(firestoreOrderId, {
-        status: 1,
+        status: 1, // Accepted (not yet in kitchen)
         paymentVerified: true,
         kitchenScheduledAt: scheduledTime,
         paymentDetails: {
@@ -117,15 +93,15 @@ class RazorpayService {
         updatedAt: now,
       });
 
-      // If already within 15-minute window
+      // If already inside the 15-minute window
       if (scheduledTime <= now) {
-
-        const updatedOrder = await ds.getOrderById(firestoreOrderId);
 
         await ds.updateOrderStatus(firestoreOrderId, {
           status: 2,
           updatedAt: now,
         });
+
+        const updatedOrder = await ds.getOrderById(firestoreOrderId);
 
         await KitchenService.addOrderItems(updatedOrder);
 
