@@ -55,7 +55,7 @@ class RazorpayService {
       const refund = await razorpayInstance.payments.refund(
         order.paymentDetails.paymentId,
         {
-          amount: order.amount * 100,
+          amount: order.overallTotal * 100,
         }
       );
 
@@ -72,14 +72,16 @@ class RazorpayService {
       };
 
     } catch (error) {
+      console.log("Refund Error:", error);
 
       await ds.updateOrderStatus(orderId, {
         refundStatus: "FAILED",
         refundFailure: {
-          message: error.message,
+          message: error?.error?.description || error.message,
           failedAt: Date.now(),
         },
       });
+
 
       return {
         cancelled: true,
