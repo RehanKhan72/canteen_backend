@@ -3,7 +3,7 @@ import { getDb } from "../config/mongodb.js";
 import KitchenService from "./KitchenService.js";
 import { emitKitchenUpdate } from "../socket/SocketGateway.js";
 import FCMService from "../../src/services/fcm.service.js";
-import MongoDatasource from "../services/datasource/MongoDatasource.js";
+import MongoDatasource from "../../src/services/datasource/MongoDatasource.js";
 const ds = new MongoDatasource();
 export default class KitchenScheduler {
     static async ensureIndexes() {
