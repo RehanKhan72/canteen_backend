@@ -15,7 +15,7 @@ import dataRoutes from "./src/routes/data.routes.js";
 import kitchenRoutes from "./src/routes/kitchen.routes.js";
 import KitchenScheduler from "./dist/services/KitchenScheduler.js";
 import accountRoutes from "./dist/routes/accounts.routes.js";
-import passwordRoutes from "./dist/routes/password.routes.js";
+// import passwordRoutes from "./dist/routes/password.routes.js";
 
 import { initSocket } from "./dist/socket/SocketGateway.js";
 
@@ -45,7 +45,7 @@ app.use("/reports", reportRoutes);
 app.use("/api", dataRoutes);
 app.use("/api/kitchen", kitchenRoutes);
 app.use("/api", accountRoutes);
-app.use("/api", passwordRoutes);
+// app.use("/api", passwordRoutes);
 
 app.get("/", (req, res) => {
   res.send("Canteen Backend Running");
