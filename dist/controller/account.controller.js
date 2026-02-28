@@ -12,6 +12,10 @@ export const deleteAccountController = async (req, res) => {
         if (!userId) {
             return res.status(400).json({ message: "User ID required" });
         }
+        if (!req.headers["x-internal-secret"] ||
+            req.headers["x-internal-secret"] !== process.env.INTERNAL_DELETE_SECRET) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
         // 1️⃣ Delete from Appwrite
         await users.delete(userId);
         // 2️⃣ Delete from Mongo (users collection)

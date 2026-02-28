@@ -14,7 +14,7 @@ import razorpayRoutes from "./src/routes/razorpay.routes.js";
 import dataRoutes from "./src/routes/data.routes.js";
 import kitchenRoutes from "./src/routes/kitchen.routes.js";
 import KitchenScheduler from "./dist/services/KitchenScheduler.js";
-import accountRoutes from "./dist/routes/account.routes.js";
+import accountRoutes from "./dist/routes/accounts.routes.js";
 
 import { initSocket } from "./dist/socket/SocketGateway.js";
 
