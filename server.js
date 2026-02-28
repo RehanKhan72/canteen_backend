@@ -14,6 +14,7 @@ import razorpayRoutes from "./src/routes/razorpay.routes.js";
 import dataRoutes from "./src/routes/data.routes.js";
 import kitchenRoutes from "./src/routes/kitchen.routes.js";
 import KitchenScheduler from "./dist/services/KitchenScheduler.js";
+import accountRoutes from "./dist/routes/account.routes.js";
 
 import { initSocket } from "./dist/socket/SocketGateway.js";
 
@@ -42,6 +43,7 @@ app.use("/api/razorpay", razorpayRoutes);
 app.use("/reports", reportRoutes);
 app.use("/api", dataRoutes);
 app.use("/api/kitchen", kitchenRoutes);
+app.use("/api", accountRoutes);
 
 app.get("/", (req, res) => {
   res.send("Canteen Backend Running");
