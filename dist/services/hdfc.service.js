@@ -14,16 +14,26 @@ class HdfcService {
     // PHASE 1 — Order creation
     // ================================================================
     async createOrder(amount, receiptId) {
-        return hdfcInstance.orders.create({
-            amount: amount * 100, // rupees → paise
-            currency: "INR",
-            receipt: receiptId,
-        });
+        console.log(`[HDFC-SERVICE] createOrder: amount=${amount} (paise=${amount * 100}), receipt=${receiptId}`);
+        try {
+            const order = await hdfcInstance.orders.create({
+                amount: amount * 100, // rupees → paise
+                currency: "INR",
+                receipt: receiptId,
+            });
+            console.log(`[HDFC-SERVICE] createOrder SUCCESS: orderId=${order.id}, status=${order.status}`);
+            return order;
+        }
+        catch (error) {
+            console.error("[HDFC-SERVICE] createOrder FAILED:", error?.message || error);
+            throw error;
+        }
     }
     // ================================================================
     // PHASE 2 — Signature verification + order update
     // ================================================================
     async verifyPayment({ orderId, paymentId, signature, firestoreOrderId, }) {
+        console.log(`[HDFC-SERVICE] verifyPayment: orderId=${orderId}, paymentId=${paymentId}, firestoreOrderId=${firestoreOrderId}`);
         // --- HMAC-SHA256 signature check ---
         const body = `${orderId}|${paymentId}`;
         const expectedSignature = crypto
@@ -31,17 +41,21 @@ class HdfcService {
             .update(body)
             .digest("hex");
         if (expectedSignature !== signature) {
+            console.warn("[HDFC-SERVICE] verifyPayment: SIGNATURE MISMATCH");
             return { verified: false };
         }
+        console.log("[HDFC-SERVICE] verifyPayment: signature OK");
         // --- Fetch order from MongoDB ---
         const order = await ds.getOrderById(firestoreOrderId);
         // Idempotency: skip if already processed (status !== -1)
         if (order.status !== -1) {
+            console.log(`[HDFC-SERVICE] verifyPayment: idempotent skip, order status=${order.status}`);
             return { verified: true, ignored: true };
         }
         const now = Date.now();
         // --- CASE 1: PICKUP NOW ---
         if (order.pickupMode === "now") {
+            console.log(`[HDFC-SERVICE] verifyPayment: PICKUP NOW — updating order to status 2`);
             await ds.updateOrderStatus(firestoreOrderId, {
                 status: 2,
                 paymentVerified: true,
@@ -64,6 +78,7 @@ class HdfcService {
         }
         // --- CASE 2: PICKUP LATER ---
         if (order.pickupMode === "later") {
+            console.log(`[HDFC-SERVICE] verifyPayment: PICKUP LATER — updating order to status 1`);
             const pickupTimestamp = order.pickupTime;
             if (!pickupTimestamp || typeof pickupTimestamp !== "number") {
                 console.error("Invalid pickupTime:", order.pickupTime);

@@ -11,20 +11,20 @@
 import express, { Router } from "express";
 import { createOrder, verifyPayment, paymentFailed, cancelOrder, checkPaymentStatus, reconcileOrder, handleWebhook, } from "../controller/hdfc.controller.js";
 const router = Router();
-// express.raw() is available on the default Express object.
-// Used to get the raw request body buffer for HMAC signature verification.
+// Body parsers — applied per-route because this router is mounted
+// BEFORE the global express.json() in server.js (required for
+// the webhook endpoint to receive a raw Buffer for HMAC verification).
+const jsonParser = express.json();
 const rawParser = express.raw({ type: "application/json" });
 // Webhook — raw body required for HMAC signature verification.
-// This route-level middleware overrides the global express.json()
-// so that req.body is a Buffer containing the raw request body.
 router.post("/webhook", rawParser, handleWebhook);
 // Payment endpoints (JSON body)
-router.post("/create-order", createOrder);
-router.post("/verify-payment", verifyPayment);
-router.post("/payment-failed", paymentFailed);
-router.post("/cancel-order", cancelOrder);
+router.post("/create-order", jsonParser, createOrder);
+router.post("/verify-payment", jsonParser, verifyPayment);
+router.post("/payment-failed", jsonParser, paymentFailed);
+router.post("/cancel-order", jsonParser, cancelOrder);
 // Status inquiry
-router.post("/status", checkPaymentStatus);
+router.post("/status", jsonParser, checkPaymentStatus);
 // Reconciliation / crash recovery
-router.post("/reconcile", reconcileOrder);
+router.post("/reconcile", jsonParser, reconcileOrder);
 export default router;

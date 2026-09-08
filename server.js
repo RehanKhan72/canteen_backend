@@ -24,7 +24,9 @@ app.use(cors());
 
 // HDFC routes — mounted BEFORE express.json() so the /webhook endpoint
 // receives a raw Buffer body for HMAC signature verification.
+// Non-webhook routes have their own express.json() middleware.
 app.use("/api/razorpay", hdfcRoutes);
+console.log("[STARTUP] HDFC payment routes mounted at /api/razorpay");
 
 app.use(express.json());
 
@@ -53,6 +55,25 @@ app.use("/api", accountRoutes);
 
 app.get("/", (req, res) => {
   res.send("Canteen Backend Running");
+});
+
+// Debug endpoint — list registered routes (remove in production)
+app.get("/debug/routes", (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push({ method: Object.keys(middleware.route.methods).join(","), path: middleware.route.path });
+    } else if (middleware.name === "router" && middleware.handle.stack) {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          const prefix = middleware.regexp.toString()
+            .replace("/^\\\\/", "").replace("\\/?(?=\\\\/|$)/i", "").replace(/\\/g, "");
+          routes.push({ method: Object.keys(handler.route.methods).join(","), path: "/" + prefix + handler.route.path });
+        }
+      });
+    }
+  });
+  res.json(routes);
 });
 
 // 🔥 IMPORTANT: use server.listen
